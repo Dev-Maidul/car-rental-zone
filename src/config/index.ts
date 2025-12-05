@@ -7,6 +7,7 @@ const config = {
   connection_str: process.env.CONNECTION_STR,
   port: process.env.PORT,
   jwtSecret: process.env.JWT_SECRET,
+  salt_rouns: process.env.SALT_ROUNDS
 };
 
 export default config;
