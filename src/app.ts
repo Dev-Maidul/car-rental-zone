@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import config from "./config";
-import initDB from "./config/db";
+import initDB from "./config/database";
 import logger from "./middleware/logger";
 import authRoutes from "./modules/auth/auth.routes";
 import userRoutes from "./modules/user/user.routes"; 
