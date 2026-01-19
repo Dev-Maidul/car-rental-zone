@@ -1,67 +1,45 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import config from "../../config";
-import * as userService from "../user/user.service";
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { ENV } from '../../config/environment';
+import { getUserByEmail } from '../../repositories/auth.repository';
+import { db } from '../../config/database';
 
-const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
-const JWT_EXPIRES_IN = "8h";
+export const loginUser = async (email: string, password: string) => {
+  const user = await getUserByEmail(email);
+  if (!user) {
+    throw new Error('Invalid email or password');
+  }
 
-export const registerUser = async (payload: {
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    throw new Error('Invalid email or password');
+  }
+
+  // Generate JWT token
+  const token = jwt.sign(
+    { id: user.id, role: user.role, email: user.email },
+    ENV.JWT_SECRET,
+    { expiresIn: '1d' }
+  );
+
+  return {
+    token,
+  };
+};
+
+export const createUserInDB = async (data: {
   name: string;
   email: string;
   password: string;
   phone: string;
   role?: string;
 }) => {
-  const email = payload.email.toLowerCase().trim();
-
-  const existing = await userService.findByEmail(email);
-  if (existing) {
-    const err: any = new Error("Email already in use");
-    err.status = 409;
-    throw err;
-  }
-
-  const hashed = await bcrypt.hash(payload.password, SALT_ROUNDS);
-
-  const created = await userService.createUser({
-    name: payload.name,
-    email,
-    password: hashed,
-    phone: payload.phone,
-    role: payload.role ?? "customer",
-  });
-
-  return created;
-};
-
-export const loginUser = async (payload: { email: string; password: string }) => {
-  const email = payload.email.toLowerCase().trim();
-  const user = await userService.findByEmail(email);
-  if (!user) {
-    const err: any = new Error("Invalid credentials");
-    err.status = 401;
-    throw err;
-  }
-
-  const match = await bcrypt.compare(payload.password, user.password);
-  if (!match) {
-    const err: any = new Error("Invalid credentials");
-    err.status = 401;
-    throw err;
-  }
-
-  const tokenPayload = { id: user.id, email: user.email, role: user.role };
-  const token = jwt.sign(tokenPayload, config.jwtSecret as string, { expiresIn: JWT_EXPIRES_IN });
-
-  return {
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-    },
-  };
+  const { name, email, password, phone, role = 'customer' } = data;
+  const result = await db.query(
+    `INSERT INTO users (name, email, password, phone, role)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, name, email, phone, role`,
+    [name, email, password, phone, role]
+  );
+  return result.rows[0];
 };

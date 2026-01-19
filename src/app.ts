@@ -1,31 +1,31 @@
-import express, { Request, Response } from "express";
-import config from "./config";
-import initDB from "./config/database";
-import logger from "./middleware/logger";
-import authRoutes from "./modules/auth/auth.routes";
-import userRoutes from "./modules/user/user.routes"; 
+import express from 'express';
+import cors from 'cors';
+import authRoutes from './modules/auth/auth.routes';
+import userRoutes from './modules/users/user.route';
+import vehicleRoutes from './modules/vehicles/vehicle.route';
+import bookingRoutes from './modules/bookings/booking.route';
+
+
 
 const app = express();
-// parser
+
 app.use(express.json());
-// app.use(express.urlencoded());
+app.use(cors());
 
-initDB();
+// auth
+app.use('/api/v1/auth', authRoutes);
 
-app.get("/", logger, (req: Request, res: Response) => {
-  res.send("Hello From Car Rental Server!");
-});
+// users
+app.use('/api/v1/users', userRoutes);
 
-app.use("/api/v1/auth", authRoutes);
+// vehicles
+app.use('/api/v1/vehicles', vehicleRoutes);
 
-app.use("/api/v1/users", userRoutes);
+// bookings
+app.use('/api/v1/bookings', bookingRoutes);
 
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "Route not found",
-    path: req.path,
-  });
+app.get('/', (req, res) => {
+  res.send('Vehicle Rental API Running...');
 });
 
 export default app;

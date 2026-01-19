@@ -1,8 +1,15 @@
-import app from "./app";
-import config from "./config";
+import app from './app';
+import { ENV } from './config/environment';
+import { connectDB } from './config/database';
+import { initTables } from './config/initTables';
 
-const port = config.port;
+const startServer = async () => {
+  await connectDB();
+  await initTables();
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-});
+  app.listen(ENV.PORT, () => {
+    console.log(`Server running on port ${ENV.PORT}`);
+  });
+};
+
+startServer();
